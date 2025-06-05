@@ -1,116 +1,129 @@
 (function() {
-    // Override and log ALL fingerprinting methods
-    console.log("%c🚀 Starting Mobile Detection Debugger...", "color: red; font-size: 16px;");
+    console.log("%c🔍 Starting Advanced Phishing Debugger (Active Usage Only)", "color: #FF6B6B; font-size: 16px; font-weight: bold;");
 
     // ===== 1. Battery API =====
     if ('getBattery' in navigator) {
         const oldGetBattery = navigator.getBattery;
         navigator.getBattery = function() {
-            console.trace("📛 [Mobile Detection] navigator.getBattery() was called!");
+            console.trace("🚨 [Active Trigger] navigator.getBattery() CALLED");
             return oldGetBattery.apply(this, arguments);
         };
     }
 
     // ===== 2. Motion/Orientation APIs =====
     if ('DeviceMotionEvent' in window) {
-        console.log("📛 [Mobile Detection] DeviceMotionEvent is supported (common on mobile).");
         const oldAddListener = window.addEventListener;
         window.addEventListener = function(type, listener, options) {
             if (type === 'devicemotion' || type === 'deviceorientation') {
-                console.trace(`📛 [Mobile Detection] ${type} event listener added!`);
+                console.trace(`🚨 [Active Trigger] ${type} listener ADDED`);
             }
             return oldAddListener.call(this, type, listener, options);
         };
     }
 
     // ===== 3. Touch Detection =====
-    if ('ontouchstart' in window) {
-        console.log("📛 [Mobile Detection] Touch events detected (common on mobile).");
-    }
+    const originalTouchStart = window.ontouchstart;
+    Object.defineProperty(window, 'ontouchstart', {
+        set: function(value) {
+            console.trace("🚨 [Active Trigger] ontouchstart handler SET");
+            return originalTouchStart;
+        },
+        configurable: true
+    });
 
     // ===== 4. Viewport/DPI Detection =====
-    console.log(`📛 [Mobile Detection] Viewport: ${window.innerWidth}x${window.innerHeight}, DPI: ${window.devicePixelRatio}`);
-    if (window.matchMedia) {
-        const checkPointerCoarse = window.matchMedia('(pointer: coarse)');
-        if (checkPointerCoarse.matches) {
-            console.log("📛 [Mobile Detection] 'pointer: coarse' (likely touchscreen).");
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = function(query) {
+        if (query.includes('pointer: coarse') || query.includes('hover: none') || query.includes('max-device-width')) {
+            console.trace(`🚨 [Active Trigger] matchMedia("${query}") CALLED`);
         }
-    }
+        return originalMatchMedia.apply(this, arguments);
+    };
 
     // ===== 5. CPU/GPU Detection =====
-    console.log(`📛 [Mobile Detection] CPU threads: ${navigator.hardwareConcurrency || 'N/A'}`);
+    const oldHardwareConcurrency = Object.getOwnPropertyDescriptor(Navigator.prototype, 'hardwareConcurrency');
+    Object.defineProperty(Navigator.prototype, 'hardwareConcurrency', {
+        get: function() {
+            console.trace("🚨 [Active Trigger] navigator.hardwareConcurrency ACCESSED");
+            return oldHardwareConcurrency.get.apply(this);
+        },
+        configurable: true
+    });
+
+    // ===== 6. WebGL Fingerprinting =====
     if ('WebGLRenderingContext' in window) {
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl');
-        if (gl) {
-            const renderer = gl.getParameter(gl.RENDERER);
-            console.log(`📛 [Mobile Detection] WebGL Renderer: ${renderer}`);
-            if (renderer.includes('Adreno') || renderer.includes('Mali') || renderer.includes('PowerVR')) {
-                console.log("📛 [Mobile Detection] Mobile GPU detected!");
+        const oldGetContext = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function(type) {
+            if (type === 'webgl' || type === 'experimental-webgl') {
+                console.trace("🚨 [Active Trigger] WebGL context REQUESTED");
             }
-        }
+            return oldGetContext.apply(this, arguments);
+        };
     }
 
-    // ===== 6. Network Detection =====
+    // ===== 7. Network Detection =====
     if ('connection' in navigator) {
-        const connection = navigator.connection;
-        console.log(`📛 [Mobile Detection] Network type: ${connection.effectiveType || 'N/A'}`);
-        if (connection.effectiveType === 'cellular') {
-            console.log("📛 [Mobile Detection] Likely on mobile data!");
-        }
-    }
-
-    // ===== 7. UserAgent Mismatch Detection =====
-    const userAgent = navigator.userAgent;
-    console.log(`📛 [Mobile Detection] UserAgent: ${userAgent}`);
-    if (userAgent.includes('Android') || userAgent.includes('iPhone') || userAgent.includes('iPad')) {
-        console.log("📛 [Mobile Detection] Mobile UserAgent detected (even in Desktop Mode).");
-    }
-
-    // ===== 8. CSS Media Query Detection =====
-    if (window.matchMedia) {
-        const checkHoverNone = window.matchMedia('(hover: none)');
-        if (checkHoverNone.matches) {
-            console.log("📛 [Mobile Detection] 'hover: none' (likely touch device).");
-        }
-    }
-
-    // ===== 9. AudioContext Fingerprinting =====
-    if ('AudioContext' in window || 'webkitAudioContext' in window) {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        console.log("📛 [Mobile Detection] AudioContext detected (can differ by device).");
-    }
-
-    // ===== 10. Screen Size/DPI Tricks =====
-    console.log(`📛 [Mobile Detection] Screen: ${screen.width}x${screen.height}, Avail: ${screen.availWidth}x${screen.availHeight}`);
-    if (screen.width < 1024 || screen.height < 768) {
-        console.log("📛 [Mobile Detection] Small screen (possible mobile).");
-    }
-
-    // ===== 11. Platform Detection =====
-    console.log(`📛 [Mobile Detection] Platform: ${navigator.platform}`);
-    if (navigator.platform.includes('Linux arm') || navigator.platform.includes('iPhone')) {
-        console.log("📛 [Mobile Detection] Mobile OS detected!");
-    }
-
-    // ===== 12. Plugins Detection (Desktop vs Mobile) =====
-    if (navigator.plugins && navigator.plugins.length === 0) {
-        console.log("📛 [Mobile Detection] No plugins (common on mobile).");
-    }
-
-    // ===== 13. Chrome-Specific Checks =====
-    if (window.chrome && window.chrome.loadTimes) {
-        console.log("📛 [Mobile Detection] Chrome-specific API detected.");
-    }
-
-    // ===== 14. Service Worker Detection =====
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-            if (regs.length > 0) {
-                console.log("📛 [Mobile Detection] Service Workers registered:", regs);
-            }
+        const oldConnection = Object.getOwnPropertyDescriptor(Navigator.prototype, 'connection');
+        Object.defineProperty(Navigator.prototype, 'connection', {
+            get: function() {
+                console.trace("🚨 [Active Trigger] navigator.connection ACCESSED");
+                return oldConnection.get.apply(this);
+            },
+            configurable: true
         });
     }
 
-    console.log("%c✅ Mobile Detection Debugger is active. Check logs for fingerprinting attempts!", "color: green; font-size: 14px;");
+    // ===== 8. AudioContext Fingerprinting =====
+    if ('AudioContext' in window || 'webkitAudioContext' in window) {
+        const oldAudioContext = window.AudioContext || window.webkitAudioContext;
+        window.AudioContext = function() {
+            console.trace("🚨 [Active Trigger] AudioContext INITIALIZED");
+            return new oldAudioContext();
+        };
+    }
+
+    // ===== 9. Service Worker Detection =====
+    if ('serviceWorker' in navigator) {
+        const oldRegister = navigator.serviceWorker.register;
+        navigator.serviceWorker.register = function() {
+            console.trace("🚨 [Active Trigger] ServiceWorker REGISTERED");
+            return oldRegister.apply(this, arguments);
+        };
+    }
+
+    // ===== 10. UserAgent Redirection =====
+    const oldUserAgent = Object.getOwnPropertyDescriptor(Navigator.prototype, 'userAgent');
+    Object.defineProperty(Navigator.prototype, 'userAgent', {
+        get: function() {
+            console.trace("🚨 [Active Trigger] navigator.userAgent ACCESSED");
+            return oldUserAgent.get.apply(this);
+        },
+        configurable: true
+    });
+
+    // ===== 11. Plugin Detection =====
+    if ('plugins' in navigator) {
+        const oldPlugins = Object.getOwnPropertyDescriptor(Navigator.prototype, 'plugins');
+        Object.defineProperty(Navigator.prototype, 'plugins', {
+            get: function() {
+                console.trace("🚨 [Active Trigger] navigator.plugins ACCESSED");
+                return oldPlugins.get.apply(this);
+            },
+            configurable: true
+        });
+    }
+
+    // ===== 12. Chrome-Specific Checks =====
+    if (window.chrome) {
+        const oldLoadTimes = window.chrome.loadTimes;
+        if (oldLoadTimes) {
+            window.chrome.loadTimes = function() {
+                console.trace("🚨 [Active Trigger] chrome.loadTimes() CALLED");
+                return oldLoadTimes.apply(this, arguments);
+            };
+        }
+    }
+
+    console.log("%c✅ Debugger active. Will ONLY log when fingerprinting methods are executed.", 
+                "color: #4CAF50; font-size: 14px; padding: 2px 4px; border-radius: 3px;");
 })();
